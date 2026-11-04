@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stand Clear</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+body{margin:0}
+
+/* Layout: one narrow column under a black station-sign band; tiled-wall ground; train bullets carry all the color. */
+:root {
+  --wall: #eef0ec;
+  --grout: #dde0da;
+  --card: #ffffff;
+  --ink: #141515;
+  --muted: #5d625e;
+  --sign: #111212;
+  --sign-ink: #f7f7f4;
+  --line: #d4d7d1;
+  --good: #1f8a3b;
+  --okay: #b7860b;
+  --bad: #c23b2e;
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --wall: #131415; --grout: #1b1c1e; --card: #1d1e20; --ink: #ecede9; --muted: #9a9e99;
+    --sign: #050505; --sign-ink: #f7f7f4; --line: #33353a; --good: #3fb860; --okay: #e0ae2a; --bad: #e8604f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --wall: #131415; --grout: #1b1c1e; --card: #1d1e20; --ink: #ecede9; --muted: #9a9e99;
+  --sign: #050505; --sign-ink: #f7f7f4; --line: #33353a; --good: #3fb860; --okay: #e0ae2a; --bad: #e8604f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background-color: var(--wall);
+  background-image:
+    linear-gradient(var(--grout) 2px, transparent 2px),
+    linear-gradient(90deg, var(--grout) 2px, transparent 2px);
+  background-size: 64px 32px;
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.45;
+  min-height: 100vh;
+}
+.wrap {
+  max-width: 560px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.sign {
+  background: var(--sign); color: var(--sign-ink);
+  border-radius: 4px; padding: 10px 16px 14px;
+  position: relative;
+}
+.sign::before { content: ""; display: block; height: 2px; background: var(--sign-ink); opacity: .9; margin-bottom: 10px; }
+.sign h1 {
+  margin: 0; font-family: var(--f-display); font-stretch: 75%; font-weight: 850;
+  font-size: clamp(34px, 9vw, 46px); line-height: 1; letter-spacing: -.01em;
+}
+.sign .meta { display: flex; justify-content: space-between; gap: 12px; margin-top: 6px; font-size: 13px; opacity: .78; flex-wrap: wrap; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 600; }
+h2 { margin: 0; font-stretch: 85%; font-weight: 800; font-size: 24px; line-height: 1.15; text-wrap: balance; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+
+.bul {
+  --c: #808183; --t: #fff;
+  display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--c); color: var(--t); font-weight: 800; font-size: 15px; line-height: 1;
+  font-family: var(--f-body); flex: none;
+}
+.bul.sm { width: 20px; height: 20px; font-size: 12px; }
+.buls { display: inline-flex; gap: 3px; flex-wrap: wrap; vertical-align: middle; }
+
+.progress { display: flex; gap: 6px; align-items: center; }
+.progress span { flex: 1; height: 6px; border-radius: 3px; background: var(--line); }
+.progress span.cur { background: var(--ink); }
+.progress span.opt { background: var(--good); }
+.progress span.ok { background: var(--okay); }
+.progress span.miss { background: var(--bad); }
+
+.trip { display: grid; grid-template-columns: 20px 1fr; gap: 0 12px; }
+.trip .rail { grid-row: 1 / 4; display: flex; flex-direction: column; align-items: center; padding-top: 6px; }
+.trip .dot { width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--ink); background: var(--card); }
+.trip .dot.end { background: var(--ink); }
+.trip .bar { flex: 1; width: 3px; background: var(--ink); margin: 2px 0; min-height: 22px; }
+.stn { min-width: 0; }
+.stn .name { font-weight: 800; font-stretch: 85%; font-size: 22px; line-height: 1.15; }
+.stn .sub { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; color: var(--muted); font-size: 13px; margin-top: 3px; }
+.gap { height: 12px; }
+
+.timer { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.timer i { display: block; height: 100%; width: 100%; background: var(--ink); transform-origin: left; }
+.timer.low i { background: var(--bad); }
+.clockrow { display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: 13px; color: var(--muted); }
+
+.route {
+  min-height: 52px; border: 2px dashed var(--line); border-radius: 6px; padding: 10px 12px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+}
+.route.filled { border-style: solid; border-color: var(--ink); }
+.route .plus { font-weight: 800; color: var(--muted); }
+.route .bul { width: 32px; height: 32px; font-size: 18px; }
+
+.pad { display: flex; flex-wrap: wrap; gap: 8px 10px; }
+.grp { display: flex; gap: 4px; }
+.key {
+  --c: #808183; --t: #fff;
+  width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer;
+  background: var(--c); color: var(--t); font: 800 18px/1 var(--f-body);
+  transition: transform .08s ease;
+}
+.key:active { transform: scale(.9); }
+.key:focus-visible, .btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn {
+  border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  font: 700 15px/1 var(--f-body); padding: 12px 14px; border-radius: 6px; cursor: pointer;
+}
+.btn.primary { background: var(--ink); color: var(--card); border-color: var(--ink); flex: 1; min-width: 120px; font-size: 16px; }
+.btn:disabled { opacity: .4; cursor: default; }
+.hintline { font-size: 14px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.verdict { font-stretch: 80%; font-weight: 850; font-size: 30px; line-height: 1; }
+.verdict.opt { color: var(--good); } .verdict.ok { color: var(--okay); } .verdict.miss { color: var(--bad); }
+.pts { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 14px; color: var(--muted); }
+.answers { display: flex; flex-direction: column; gap: 8px; }
+.ans { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 14px; }
+.ans .plus { color: var(--muted); font-weight: 800; }
+.ans .tag { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; padding: 3px 6px; border-radius: 3px; border: 1px solid var(--line); color: var(--muted); }
+.note { font-size: 14px; border-left: 3px solid var(--ink); padding-left: 10px; }
+
+.score-big { font-family: var(--f-mono); font-weight: 700; font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
+.rows { display: flex; flex-direction: column; }
+.row { display: grid; grid-template-columns: 14px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.row .sq { width: 14px; height: 14px; border-radius: 3px; }
+.row .pts { font-size: 13px; }
+.rules { display: grid; gap: 10px; font-size: 15px; }
+.rules div { display: grid; grid-template-columns: 22px 1fr; gap: 10px; }
+.rules b { font-family: var(--f-mono); color: var(--muted); font-weight: 700; }
+.toast { font-size: 13px; color: var(--muted); min-height: 1em; }
+pre.share { margin: 0; font-family: var(--f-mono); font-size: 13px; white-space: pre-wrap; background: var(--wall); padding: 10px; border-radius: 4px; user-select: all; }
+@media (prefers-reduced-motion: reduce) { .key { transition: none; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="sign">
+    <h1>Stand Clear</h1>
+    <div class="meta"><span id="dateLbl"></span><span id="numLbl"></span></div>
+  </header>
+  <main id="app"></main>
+</div>
+
+<script>
+const COLORS = {
+  '1':'#EE352E','2':'#EE352E','3':'#EE352E','4':'#00933C','5':'#00933C','6':'#00933C','7':'#B933AD',
+  'A':'#0039A6','C':'#0039A6','E':'#0039A6','B':'#FF6319','D':'#FF6319','F':'#FF6319','M':'#FF6319',
+  'G':'#6CBE45','J':'#996633','Z':'#996633','L':'#A7A9AC','N':'#FCCC0A','Q':'#FCCC0A','R':'#FCCC0A','W':'#FCCC0A','S':'#808183'
+};
+const DARK_TEXT = 'NQRW';
+const PAD = ['123','456','7','ACE','BDFM','G','JZ','L','NQRW','S'];
+
+/* Puzzle bank. Routes: legs joined by "+", each leg lists every line that works for it.
+   o = optimal (fewest trains), v = valid but longer. */
+const TIERS = [
+  [ // 1 — every New Yorker
+    {f:'Union Sq–14 St',fb:'Manhattan',fl:'456LNQRW',t:'Bedford Av',tb:'Brooklyn',tl:'L',o:['L'],v:[],n:'One stop under the East River on the L.'},
+    {f:'Times Sq–42 St',fb:'Manhattan',fl:'1237ACENQRWS',t:'Grand Central–42 St',tb:'Manhattan',tl:'4567S',o:['S','7'],v:[],n:'The 42 St Shuttle exists for exactly this. The 7 works too.'},
+    {f:'Atlantic Av–Barclays Ctr',fb:'Brooklyn',fl:'2345BDNQR',t:'Coney Island–Stillwell Av',tb:'Brooklyn',tl:'DFNQ',o:['DNQ'],v:['B+Q','R+N'],n:'The D, N and Q all run to Stillwell Av without a transfer.'},
+    {f:'Grand Central–42 St',fb:'Manhattan',fl:'4567S',t:'161 St–Yankee Stadium',tb:'Bronx',tl:'4BD',o:['4'],v:['56+4','7+BD'],n:'The 4 goes straight up Lexington to the stadium.'},
+    {f:'34 St–Penn Station',fb:'Manhattan',fl:'123ACE',t:'Times Sq–42 St',tb:'Manhattan',tl:'1237ACENQRWS',o:['123','ACE'],v:[],n:'Either Penn platform gets you there in one stop.'},
+    {f:'34 St–Herald Sq',fb:'Manhattan',fl:'BDFMNQRW',t:'Forest Hills–71 Av',tb:'Queens',tl:'EFMR',o:['FMR'],v:['BD+E','NQW+R'],n:'The F, M and R all run out Queens Blvd to 71 Av.'},
+    {f:'59 St–Columbus Circle',fb:'Manhattan',fl:'1ABCD',t:'125 St (St. Nicholas Av)',tb:'Manhattan',tl:'ABCD',o:['ABCD'],v:[],n:'All four 8 Av / Central Park West trains stop at 125 St.'}
+  ],
+  [ // 2 — a little thought
+    {f:'World Trade Center',fb:'Manhattan',fl:'ACE123RW',t:'Court Sq–23 St',tb:'Queens',tl:'7EGM',o:['E'],v:['AC+E','ACE123RW+7','AC+L+G'],n:'The E runs from WTC straight to Court Sq. A/C + L + G works, but that is a scenic tour.'},
+    {f:'4 Av–9 St',fb:'Brooklyn',fl:'FGR',t:'Roosevelt Island',tb:'Manhattan',tl:'F',o:['F'],v:['R+F','G+F'],n:'You are already standing on the F platform.'},
+    {f:'Grand Central–42 St',fb:'Manhattan',fl:'4567S',t:'Jackson Hts–Roosevelt Av',tb:'Queens',tl:'7EFMR',o:['7'],v:['6+EM','456+R'],n:'The 7 stops at 74 St–Broadway, which is the same complex.'},
+    {f:'Coney Island–Stillwell Av',fb:'Brooklyn',fl:'DFNQ',t:'Astoria–Ditmars Blvd',tb:'Queens',tl:'NW',o:['N'],v:['DQ+NW','F+7+NW'],n:'The N runs end to end: Coney Island to Astoria.'},
+    {f:'Wall St (William St)',fb:'Manhattan',fl:'23',t:'Jamaica Center–Parsons/Archer',tb:'Queens',tl:'EJZ',o:['23+JZ','23+E'],v:['23+AC+E'],n:'Change at Fulton St for the J/Z, or at Park Place / WTC for the E.'},
+    {f:'Bedford Av',fb:'Brooklyn',fl:'L',t:'161 St–Yankee Stadium',tb:'Bronx',tl:'4BD',o:['L+4'],v:['L+56+4','L+AC+BD','L+FM+BD'],n:'L to Union Sq, then the 4 uptown.'},
+    {f:'Greenpoint Av',fb:'Brooklyn',fl:'G',t:'Grand Central–42 St',tb:'Manhattan',tl:'4567S',o:['G+7'],v:['G+EM+6'],n:'G to Court Sq, then the 7 into Manhattan.'}
+  ],
+  [ // 3 — transfer nerds
+    {f:'Flushing–Main St',fb:'Queens',fl:'7',t:'Coney Island–Stillwell Av',tb:'Brooklyn',tl:'DFNQ',o:['7+DFNQ'],v:['7+456+DNQ'],n:'Ride the 7 to Times Sq for the N/Q, or 5 Av–Bryant Pk for the D/F.'},
+    {f:'Wakefield–241 St',fb:'Bronx',fl:'25',t:'Canarsie–Rockaway Pkwy',tb:'Brooklyn',tl:'L',o:['25+L'],v:['2+3+L'],n:'2 to 14 St or 5 to Union Sq, then the L to the end.'},
+    {f:'Ozone Park–Lefferts Blvd',fb:'Queens',fl:'A',t:'Flushing–Main St',tb:'Queens',tl:'7',o:['A+7'],v:['A+EFGM+7'],n:'Two Queens stations, but the fastest link is through Times Sq.'},
+    {f:'Middle Village–Metropolitan Av',fb:'Queens',fl:'M',t:'Coney Island–Stillwell Av',tb:'Brooklyn',tl:'DFNQ',o:['M+DFNQ'],v:[],n:'M into Manhattan, then any Coney Island train.'},
+    {f:'Woodlawn',fb:'Bronx',fl:'4',t:'Coney Island–Stillwell Av',tb:'Brooklyn',tl:'DFNQ',o:['4+DNQ'],v:['4+6+F'],n:'Grab the D at 161 St–Yankee Stadium, or stay on to Atlantic Av.'},
+    {f:'Howard Beach–JFK Airport',fb:'Queens',fl:'A',t:'Bedford Av',tb:'Brooklyn',tl:'L',o:['A+L'],v:['A+G+L'],n:'Broadway Junction links the A and the L.'},
+    {f:'Canarsie–Rockaway Pkwy',fb:'Brooklyn',fl:'L',t:'Astoria–Ditmars Blvd',tb:'Queens',tl:'NW',o:['L+NW'],v:['L+456+NW'],n:'L to Union Sq, then the N or W.'},
+    {f:'Bay Ridge–95 St',fb:'Brooklyn',fl:'R',t:'Flushing–Main St',tb:'Queens',tl:'7',o:['R+7'],v:['R+NW+7'],n:'R to Times Sq, then the 7.'},
+    {f:'Court Sq–23 St',fb:'Queens',fl:'7EGM',t:'Coney Island–Stillwell Av',tb:'Brooklyn',tl:'DFNQ',o:['G+F','7+DFNQ','EM+DF'],v:[],n:'Local move: G to Church Av, then the F.'},
+    {f:'Smith–9 Sts',fb:'Brooklyn',fl:'FG',t:'Times Sq–42 St',tb:'Manhattan',tl:'1237ACENQRWS',o:['FG+ACE','F+NQRW7'],v:[],n:'Jay St–MetroTech or Hoyt–Schermerhorn for the A/C, or Herald Sq for the N/Q/R/W.'}
+  ],
+  [ // 4 — outer-borough deep cuts
+    {f:'Pelham Bay Park',fb:'Bronx',fl:'6',t:'Jamaica–179 St',tb:'Queens',tl:'F',o:['6+F'],v:['6+EMR+F'],n:'Bleecker St (6) connects to Broadway–Lafayette (F).'},
+    {f:'Far Rockaway–Mott Av',fb:'Queens',fl:'A',t:'Astoria–Ditmars Blvd',tb:'Queens',tl:'NW',o:['A+NW'],v:['A+7+NW','A+45+NW'],n:'A to 42 St–Port Authority, walk through to the N/W at Times Sq.'},
+    {f:'Inwood–207 St',fb:'Manhattan',fl:'A',t:'Rockaway Park–Beach 116 St',tb:'Queens',tl:'AS',o:['A+S','A'],v:[],n:'A to Broad Channel, then the Rockaway Park Shuttle. Some rush-hour A trains go all the way.'},
+    {f:'Bowling Green',fb:'Manhattan',fl:'45',t:'Norwood–205 St',tb:'Bronx',tl:'D',o:['45+D'],v:['4+6+F+D'],n:'4 to 161 St–Yankee Stadium for the D, or 4/5 to Atlantic Av.'},
+    {f:'Myrtle–Wyckoff Avs',fb:'Brooklyn',fl:'LM',t:'Howard Beach–JFK Airport',tb:'Queens',tl:'A',o:['LM+A'],v:['M+JZ+A'],n:'L to Broadway Junction, then the A.'},
+    {f:'Eastchester–Dyre Av',fb:'Bronx',fl:'5',t:'Coney Island–Stillwell Av',tb:'Brooklyn',tl:'DFNQ',o:['5+DNQ'],v:['5+4+D','5+6+F'],n:'Stay on the 5 to Atlantic Av–Barclays Ctr.'},
+    {f:'Sutphin Blvd–Archer Av–JFK',fb:'Queens',fl:'EJZ',t:'Coney Island–Stillwell Av',tb:'Brooklyn',tl:'DFNQ',o:['E+DF','JZ+NQ'],v:[],n:'E to Forest Hills or W 4 St for the F, or J/Z to Canal St for the N/Q.'},
+    {f:'Norwood–205 St',fb:'Bronx',fl:'D',t:'Far Rockaway–Mott Av',tb:'Queens',tl:'A',o:['D+A'],v:[],n:'D to 145 St, 59 St or W 4 St, then the A.'},
+    {f:'Middle Village–Metropolitan Av',fb:'Queens',fl:'M',t:'Astoria–Ditmars Blvd',tb:'Queens',tl:'NW',o:['M+NW'],v:['M+7+NW','M+L+NW'],n:'M to 34 St–Herald Sq, then the N or W.'}
+  ],
+  [ // 5 — the Rockaways boss level
+    {f:'Bedford Av',fb:'Brooklyn',fl:'L',t:'Rockaway Park–Beach 116 St',tb:'Queens',tl:'AS',o:['L+A+S','L+A'],v:['L+G+A+S'],n:'L to Broadway Junction, A to Broad Channel, then the shuttle.'},
+    {f:'Rockaway Park–Beach 116 St',fb:'Queens',fl:'AS',t:'Pelham Bay Park',tb:'Bronx',tl:'6',o:['S+A+BDEFM45+6','A+BDEFM45+6'],v:[],n:'Shuttle to Broad Channel, A into Manhattan, then cross to the 6 (Fulton St, W 4 St to Bleecker, or 53 St).'},
+    {f:'Court Sq–23 St',fb:'Queens',fl:'7EGM',t:'Rockaway Park–Beach 116 St',tb:'Queens',tl:'AS',o:['7EGM+A+S','7EGM+A'],v:[],n:'G to Hoyt–Schermerhorn is the slick way onto the A.'},
+    {f:'Jefferson St',fb:'Brooklyn',fl:'L',t:'Broad Channel',tb:'Queens',tl:'AS',o:['L+A'],v:['L+G+A'],n:'L to Broadway Junction, then the A across Jamaica Bay.'},
+    {f:'Rockaway Park–Beach 116 St',fb:'Queens',fl:'AS',t:'161 St–Yankee Stadium',tb:'Bronx',tl:'4BD',o:['S+A+BD4','A+BD4'],v:[],n:'Shuttle, A, then the D at 145 St or the 4 at Fulton St.'},
+    {f:'Far Rockaway–Mott Av',fb:'Queens',fl:'A',t:'Jamaica–179 St',tb:'Queens',tl:'F',o:['A+F'],v:['A+E+F','A+G+F'],n:'Same borough, still goes through Brooklyn: switch to the F at Jay St–MetroTech.'},
+    {f:'Aqueduct Racetrack',fb:'Queens',fl:'A',t:'Court Sq–23 St',tb:'Queens',tl:'7EGM',o:['A+7EGM'],v:[],n:'A to Hoyt–Schermerhorn for the G is the insider pick.'},
+    {f:'Bay Ridge–95 St',fb:'Brooklyn',fl:'R',t:'Rockaway Park–Beach 116 St',tb:'Queens',tl:'AS',o:['R+A+S','R+A'],v:[],n:'R to Jay St–MetroTech, A to Broad Channel, then the shuttle.'},
+    {f:'Rockaway Park–Beach 116 St',fb:'Queens',fl:'AS',t:'Wakefield–241 St',tb:'Bronx',tl:'25',o:['S+A+2','A+2'],v:[],n:'A to Fulton St or Chambers St, then the 2 to the very top of the Bronx.'}
+  ]
+];
+
+const LIMIT = 45;           // seconds per question
+const PTS = {opt:100, ok:50, miss:0};
+const SPEED_MAX = 50, HINT_COST = 25;
+const LAUNCH = new Date(2026, 10, 4);
+
+/* ---------- helpers ---------- */
+function todayKey(d = new Date()) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function puzzleNum(d = new Date()) {
+  const a = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  return Math.round((a - LAUNCH) / 864e5) + 1;
+}
+function rngFrom(str) {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = h << 13 | h >>> 19; }
+  let a = h >>> 0;
+  return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+function pickSet(seed) {
+  const r = rngFrom('standclear:' + seed);
+  return TIERS.map(t => t[Math.floor(r() * t.length)]);
+}
+function bul(ch, cls = '') {
+  const t = DARK_TEXT.includes(ch) ? '#111' : '#fff';
+  return `<span class="bul ${cls}" style="--c:${COLORS[ch]};--t:${t}">${ch}</span>`;
+}
+function buls(str, cls = 'sm') { return `<span class="buls">${[...str].map(c => bul(c, cls)).join('')}</span>`; }
+function routeHTML(route) {
+  return route.split('+').map(leg => buls(leg, 'sm')).join('<span class="plus">+</span>');
+}
+function matches(user, route) {
+  const legs = route.split('+');
+  return user.length === legs.length && user.every((c, i) => legs[i].includes(c));
+}
+function grade(user, q) {
+  const u = user.filter((c, i) => c !== user[i-1]);
+  if (q.o.some(r => matches(u, r))) return 'opt';
+  if (q.v.some(r => matches(u, r))) return 'ok';
+  return 'miss';
+}
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+
+/* ---------- state ---------- */
+const app = document.getElementById('app');
+const KEY = 'standclear:' + todayKey();
+let S = { mode: 'daily', set: pickSet(todayKey()), i: 0, results: [], route: [], hint: false, t0: 0, raf: 0, done: false };
+
+document.getElementById('dateLbl').textContent = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+document.getElementById('numLbl').textContent = 'No. ' + puzzleNum();
+
+/* ---------- screens ---------- */
+function intro() {
+  const saved = store.get(KEY);
+  if (saved && saved.results && saved.results.length === 5) { S.results = saved.results; S.set = pickSet(todayKey()); return summary(true); }
+  app.innerHTML = `
+  <section class="panel">
+    <div class="eyebrow">Today's ride · 5 trips</div>
+    <h2>Route yourself across the city, faster than the MTA app.</h2>
+    <div class="rules">
+      <div><b>1</b><span>You get a start and an end station. Tap the trains you'd ride, in order.</span></div>
+      <div><b>2</b><span>Fewest trains wins: <strong>100</strong> for the best route, <strong>50</strong> for one that works but takes longer.</span></div>
+      <div><b>3</b><span>Up to <strong>50</strong> speed bonus. You have ${LIMIT} seconds per trip.</span></div>
+      <div><b>4</b><span>Trips get more obscure as you go. A hint costs ${HINT_COST}.</span></div>
+    </div>
+    <div class="muted" style="font-size:14px">Example: World Trade Center to Court Sq could be ${routeHTML('AC+L+G')} … but ${buls('E')} alone is the best route.</div>
+    <div class="actions"><button class="btn primary" id="go">Start today's ride</button></div>
+  </section>`;
+  document.getElementById('go').onclick = () => { S.i = 0; S.results = []; question(); };
+}
+
+function progressHTML() {
+  return `<div class="progress">${S.set.map((_, k) => {
+    const r = S.results[k]; return `<span class="${r ? r.g : (k === S.i ? 'cur' : '')}"></span>`;
+  }).join('')}</div>`;
+}
+
+function question() {
+  const q = S.set[S.i];
+  S.route = []; S.hint = false; S.done = false;
+  app.innerHTML = `
+  <section class="panel">
+    ${progressHTML()}
+    <div class="eyebrow">Trip ${S.i+1} of 5${S.mode === 'practice' ? ' · practice' : ''}</div>
+    <div class="trip">
+      <div class="rail"><div class="dot"></div><div class="bar"></div><div class="dot end"></div></div>
+      <div class="stn"><div class="name">${q.f}</div><div class="sub">${q.fb} ${buls(q.fl)}</div></div>
+      <div class="gap"></div>
+      <div class="stn"><div class="name">${q.t}</div><div class="sub" id="toSub">${q.tb}</div></div>
+    </div>
+    <div>
+      <div class="timer" id="timer"><i id="tbar"></i></div>
+      <div class="clockrow"><span id="clock">${LIMIT.toFixed(1)}s</span><span>speed bonus <span id="bonus">${SPEED_MAX}</span></span></div>
+    </div>
+    <div class="route" id="route"><span class="muted">Tap trains in the order you'd ride them</span></div>
+    <div class="pad">${PAD.map(g => `<div class="grp">${[...g].map(c =>
+      `<button class="key" id="k-${c}" data-k="${c}" aria-label="${c} train" style="--c:${COLORS[c]};--t:${DARK_TEXT.includes(c) ? '#111' : '#fff'}">${c}</button>`).join('')}</div>`).join('')}</div>
+    <div class="actions">
+      <button class="btn" id="undo">Undo</button>
+      <button class="btn" id="hint">Hint −${HINT_COST}</button>
+      <button class="btn primary" id="ride" disabled>Ride</button>
+    </div>
+  </section>`;
+  app.querySelectorAll('.key').forEach(b => b.onclick = () => add(b.dataset.k));
+  document.getElementById('undo').onclick = () => { S.route.pop(); drawRoute(); };
+  document.getElementById('hint').onclick = showHint;
+  document.getElementById('ride').onclick = () => submit(false);
+  S.t0 = performance.now();
+  tick();
+}
+
+function add(c) {
+  if (S.done || S.route.length >= 4) return;
+  S.route.push(c); drawRoute();
+}
+function drawRoute() {
+  const el = document.getElementById('route');
+  if (!el) return;
+  el.classList.toggle('filled', S.route.length > 0);
+  el.innerHTML = S.route.length
+    ? S.route.map(c => bul(c)).join('<span class="plus">+</span>')
+    : '<span class="muted">Tap trains in the order you\'d ride them</span>';
+  document.getElementById('ride').disabled = S.route.length === 0;
+}
+function showHint() {
+  if (S.hint || S.done) return;
+  S.hint = true;
+  const q = S.set[S.i];
+  document.getElementById('toSub').innerHTML = `${q.tb} ${buls(q.tl)}`;
+  const h = document.getElementById('hint'); h.disabled = true; h.textContent = 'Hint used';
+}
+function elapsed() { return (performance.now() - S.t0) / 1000; }
+function bonusAt(t) { return Math.round(SPEED_MAX * Math.max(0, (LIMIT - t) / LIMIT)); }
+function tick() {
+  const t = elapsed(), left = Math.max(0, LIMIT - t);
+  const bar = document.getElementById('tbar');
+  if (!bar || S.done) return;
+  bar.style.transform = `scaleX(${left / LIMIT})`;
+  document.getElementById('timer').classList.toggle('low', left < 10);
+  document.getElementById('clock').textContent = left.toFixed(1) + 's';
+  document.getElementById('bonus').textContent = bonusAt(t);
+  if (left <= 0) return submit(true);
+  S.raf = requestAnimationFrame(tick);
+}
+
+function submit(timeout) {
+  if (S.done) return;
+  S.done = true; cancelAnimationFrame(S.raf);
+  const q = S.set[S.i], t = Math.min(LIMIT, elapsed());
+  const g = timeout ? 'miss' : grade(S.route, q);
+  const base = PTS[g], speed = g === 'miss' ? 0 : (g === 'opt' ? bonusAt(t) : Math.round(bonusAt(t) / 2));
+  const hint = S.hint && g !== 'miss' ? HINT_COST : 0;
+  const total = Math.max(0, base + speed - hint);
+  const res = { g, total, base, speed, hint, t: +t.toFixed(1), route: S.route.join(''), timeout };
+  S.results.push(res);
+  if (S.mode === 'daily') store.set(KEY, { results: S.results });
+  feedback(q, res);
+}
+
+function feedback(q, r) {
+  const label = r.timeout ? 'Doors closed' : { opt: 'Best route', ok: 'You made it', miss: 'Wrong train' }[r.g];
+  const yours = r.route ? [...r.route].map(c => bul(c, 'sm')).join('<span class="plus">+</span>') : '<span class="muted">no route</span>';
+  app.innerHTML = `
+  <section class="panel">
+    ${progressHTML()}
+    <div class="eyebrow">Trip ${S.i+1} of 5 · ${q.f} → ${q.t}</div>
+    <div class="verdict ${r.g}">${label}</div>
+    <div class="pts">+${r.total} pts &nbsp;·&nbsp; route ${r.base} · speed ${r.speed}${r.hint ? ' · hint −' + r.hint : ''} · ${r.t}s</div>
+    <div class="ans"><span class="tag">Yours</span>${yours}</div>
+    <div class="answers">
+      <div class="eyebrow">Best routes</div>
+      ${q.o.map(x => `<div class="ans">${routeHTML(x)}</div>`).join('')}
+      ${q.v.length ? `<div class="eyebrow" style="margin-top:6px">Also works</div>${q.v.map(x => `<div class="ans">${routeHTML(x)}</div>`).join('')}` : ''}
+    </div>
+    <p class="note">${q.n}</p>
+    <div class="actions"><button class="btn primary" id="next">${S.i < 4 ? 'Next trip' : 'See your score'}</button></div>
+  </section>`;
+  const nx = document.getElementById('next');
+  nx.focus();
+  nx.onclick = () => { S.i++; S.i < 5 ? question() : summary(false); };
+}
+
+function summary(returning) {
+  const total = S.results.reduce((a, r) => a + r.total, 0);
+  const sq = { opt: '🟩', ok: '🟨', miss: '🟥' };
+  const sqColor = { opt: 'var(--good)', ok: 'var(--okay)', miss: 'var(--bad)' };
+  const share = `Stand Clear No. ${puzzleNum()}${S.mode === 'practice' ? ' (practice)' : ''}\n${S.results.map(r => sq[r.g]).join('')}\n${total}/750`;
+  app.innerHTML = `
+  <section class="panel">
+    ${progressHTML()}
+    <div class="eyebrow">${S.mode === 'practice' ? 'Practice ride' : (returning ? "You've ridden today" : "Today's ride")}</div>
+    <div class="score-big">${total}<span class="muted" style="font-size:20px"> / 750</span></div>
+    <p class="muted">${rank(total)}</p>
+    <div class="rows">${S.set.map((q, k) => { const r = S.results[k]; return `
+      <div class="row"><span class="sq" style="background:${sqColor[r.g]}"></span>
+        <span>${q.f} → ${q.t}</span><span class="pts">+${r.total}</span></div>`; }).join('')}</div>
+    <pre class="share" id="shareTxt">${share}</pre>
+    <div class="actions">
+      <button class="btn primary" id="copy">Copy result</button>
+      <button class="btn" id="practice">Practice ride</button>
+    </div>
+    <div class="toast" id="toast">${S.mode === 'daily' ? 'New trips every day at midnight.' : ''}</div>
+  </section>`;
+  document.getElementById('copy').onclick = async () => {
+    const toast = document.getElementById('toast');
+    try { await navigator.clipboard.writeText(share); toast.textContent = 'Copied. Go flex in the group chat.'; }
+    catch (e) {
+      const sel = window.getSelection(), rg = document.createRange();
+      rg.selectNodeContents(document.getElementById('shareTxt')); sel.removeAllRanges(); sel.addRange(rg);
+      toast.textContent = 'Selected. Copy it from your keyboard.';
+    }
+  };
+  document.getElementById('practice').onclick = () => {
+    S.mode = 'practice'; S.set = pickSet('p' + Math.random()); S.i = 0; S.results = []; question();
+  };
+}
+function rank(n) {
+  if (n >= 650) return 'Train operator. You could drive this thing.';
+  if (n >= 500) return 'Born and raised. You stand exactly where the doors open.';
+  if (n >= 350) return 'Real New Yorker. You know which car to board.';
+  if (n >= 200) return 'Getting there. Still checking the map at transfers.';
+  return 'Tourist energy. Stand clear of the closing doors, please.';
+}
+
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('route') || S.done) {
+    if (e.key === 'Enter' && document.getElementById('next')) { e.preventDefault(); document.getElementById('next').click(); }
+    return;
+  }
+  const k = e.key.toUpperCase();
+  if (COLORS[k] && !e.metaKey && !e.ctrlKey) { add(k); }
+  else if (e.key === 'Backspace') { S.route.pop(); drawRoute(); }
+  else if (e.key === 'Enter' && S.route.length) { e.preventDefault(); submit(false); }
+});
+
+intro();
+</script>
+
+</body>
+</html>
